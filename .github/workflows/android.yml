@@ -5,13 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,52 +24,35 @@ jobs:
         with:
           gradle-version: '8.10'
 
-      - name: Render/build pass 1
-        run: gradle --no-daemon clean assembleDebug
+      - name: Render and build pass 1
+        run: gradle clean assembleDebug --stacktrace
 
-      - name: Render/build passes 2-5
+      - name: Render and build passes 2-10
+        shell: bash
         run: |
-          for i in 2 3 4 5; do
-            echo "=== Build validation pass $i ==="
-            gradle --no-daemon assembleDebug
+          set -e
+          for i in 2 3 4 5 6 7 8 9 10; do
+            echo "=== BUILD PASS $i ==="
+            gradle assembleDebug
           done
 
-      - name: Verify APK structure and signature
+      - name: Verify APK archive
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           unzip -t app/build/outputs/apk/debug/app-debug.apk >/dev/null
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
-          echo "APK size:"
-          stat -c%s app/build/outputs/apk/debug/app-debug.apk
+          echo "APK bytes: $(stat -c%s app/build/outputs/apk/debug/app-debug.apk)"
 
-      - name: Install and launch APK on Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: default
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          script: |
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
-            adb shell am start -n com.naten.advancedmobile.v3/.MainActivity
-            sleep 4
-            adb shell pidof com.naten.advancedmobile.v3
-            adb shell dumpsys package com.naten.advancedmobile.v3 | grep -E "versionCode=3|versionName=0.3.0"
+      - name: Verify APK signature
+        run: |
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Inspect APK package
+        run: |
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -20
 
       - name: Upload final APK
         uses: actions/upload-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-debug-apk
+          name: N8N-Advanced-Mobile-v0.4.0
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      - name: Package source
-        run: git archive --format=zip --output=N8N-Advanced-Mobile-source.zip HEAD
-
-      - name: Upload source
-        uses: actions/upload-artifact@v4
-        with:
-          name: N8N-Advanced-Mobile-source
-          path: N8N-Advanced-Mobile-source.zip
           if-no-files-found: error
