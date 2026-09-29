@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-release:
+    name: Build and verify signed release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -26,36 +27,106 @@ jobs:
         with:
           gradle-version: '8.10'
 
-      - name: Clean build
-        run: gradle clean assembleDebug --stacktrace
+      - name: Clean release build
+        run: gradle clean assembleRelease --stacktrace
 
-      - name: Repeat build validation passes
+      - name: Generate temporary release signing key
+        env:
+          KEYSTORE_PASSWORD: n8n-mobile-ci-only
+        run: |
+          keytool -genkeypair -v \
+            -keystore ci-release.keystore \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEYSTORE_PASSWORD" \
+            -alias n8nmobile \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=N8N Advanced Mobile, O=N8N Prototype, C=IN"
+
+      - name: Align and sign release APK
+        env:
+          KEYSTORE_PASSWORD: n8n-mobile-ci-only
+        run: |
+          set -e
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
+          ALIGNED="app-release-aligned.apk"
+          FINAL="N8N-Advanced-Mobile-v0.8.0.apk"
+          "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign --ks ci-release.keystore --ks-key-alias n8nmobile --ks-pass env:KEYSTORE_PASSWORD --out "$FINAL" "$ALIGNED"
+          "$APKSIGNER" verify --verbose "$FINAL"
+
+      - name: Verify install-safe package metadata
+        run: |
+          set -e
+          APK="N8N-Advanced-Mobile-v0.8.0.apk"
+          unzip -t "$APK" >/dev/null
+          test -s "$APK"
+          BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK")"
+          echo "$BADGING"
+          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v8' versionCode='8' versionName='0.8.0'"
+          echo "$BADGING" | grep -F "targetSdkVersion:'28'"
+          if echo "$BADGING" | grep -q "testOnly"; then exit 1; fi
+          if echo "$BADGING" | grep -q "application-debuggable"; then exit 1; fi
+
+      - name: Repeat APK validation 20 times
         shell: bash
         run: |
           set -e
-          for i in 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-            echo "=== BUILD PASS $i ==="
-            gradle assembleDebug
+          APK="N8N-Advanced-Mobile-v0.8.0.apk"
+          for i in $(seq 1 20); do
+            echo "=== APK VALIDATION PASS $i ==="
+            unzip -t "$APK" >/dev/null
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
           done
 
-      - name: Verify APK archive
-        run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          unzip -t app/build/outputs/apk/debug/app-debug.apk >/dev/null
-          echo "APK bytes: $(stat -c%s app/build/outputs/apk/debug/app-debug.apk)"
-
-      - name: Verify APK signature
-        run: |
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Verify package identity
-        run: |
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -20
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "package: name='com.naten.advancedmobile.v7' versionCode='7' versionName='0.7.0'"
-
-      - name: Upload final APK
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v0.7.0
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: N8N-Advanced-Mobile-v0.8.0
+          path: N8N-Advanced-Mobile-v0.8.0.apk
           if-no-files-found: error
+
+  emulator-install:
+    name: Install-test on Android emulator
+    needs: build-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [29]
+    steps:
+      - name: Download signed APK
+        uses: actions/download-artifact@v4
+        with:
+          name: N8N-Advanced-Mobile-v0.8.0
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          profile: pixel_7_pro
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          disable-animations: true
+          script: |
+            set -e
+            APK="apk/N8N-Advanced-Mobile-v0.8.0.apk"
+            adb wait-for-device
+            adb shell getprop ro.build.version.sdk
+            for i in $(seq 1 20); do
+              echo "=== INSTALL TEST PASS $i ==="
+              adb uninstall com.naten.advancedmobile.v8 >/dev/null 2>&1 || true
+              adb install "$APK"
+              adb shell pm path com.naten.advancedmobile.v8
+              adb shell monkey -p com.naten.advancedmobile.v8 1 >/dev/null
+              adb shell am force-stop com.naten.advancedmobile.v8
+            done
