@@ -5,11 +5,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.naten.advancedmobile.v7'
+        applicationId 'com.naten.advancedmobile.v8'
         minSdk 23
-        targetSdk 29
-        versionCode 7
-        versionName '0.7.0'
+        targetSdk 28
+        versionCode 8
+        versionName '0.8.0'
     }
 
     buildTypes {
@@ -19,6 +19,7 @@ android {
         }
         release {
             minifyEnabled false
+            debuggable false
         }
     }
 
