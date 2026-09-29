@@ -26,10 +26,10 @@ jobs:
         with:
           gradle-version: '8.10'
 
-      - name: Render and build pass 1
+      - name: Clean build
         run: gradle clean assembleDebug --stacktrace
 
-      - name: Render and build passes 2-10
+      - name: Repeat build validation passes
         shell: bash
         run: |
           set -e
@@ -48,13 +48,14 @@ jobs:
         run: |
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Inspect APK package
+      - name: Verify package identity
         run: |
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -20
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "package: name='com.naten.advancedmobile.v7' versionCode='7' versionName='0.7.0'"
 
       - name: Upload final APK
         uses: actions/upload-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v0.6.0
+          name: N8N-Advanced-Mobile-v0.7.0
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
