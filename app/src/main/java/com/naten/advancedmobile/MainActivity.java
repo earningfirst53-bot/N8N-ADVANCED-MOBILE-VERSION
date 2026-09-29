@@ -64,4 +64,4 @@ public class MainActivity extends Activity {
     }
 }
 
-// final validation pass
+// final APK build validation pass
