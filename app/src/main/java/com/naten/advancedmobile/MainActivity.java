@@ -25,8 +25,8 @@ public class MainActivity extends Activity {
         r.setPadding(dp(18),dp(24),dp(18),dp(30));r.setBackgroundColor(Color.rgb(246,247,249));sv.addView(r);
 
         TextView t=txt("N8N Advanced Mobile",26,true);r.addView(t);
-        TextView s=txt("Basic automation engine — deterministic user-defined actions",14,false);
-        s.setPadding(0,dp(5),0,dp(14));r.addView(s);
+        TextView sub=txt("Basic automation engine — deterministic user-defined actions",14,false);
+        sub.setPadding(0,dp(5),0,dp(14));r.addView(sub);
 
         TextView disclosure=txt("Accessibility disclosure: this app can read the active app's accessibility UI tree and perform only actions you explicitly configure. It does not silently grant permissions or bypass Android security controls. You can disable the service in Android Settings.",13,false);
         disclosure.setBackgroundColor(Color.WHITE);disclosure.setPadding(dp(14),dp(14),dp(14),dp(14));r.addView(disclosure);
