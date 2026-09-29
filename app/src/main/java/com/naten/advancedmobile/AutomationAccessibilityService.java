@@ -11,7 +11,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONArray;
@@ -172,7 +171,7 @@ public class AutomationAccessibilityService extends AccessibilityService {
         return out.toString().trim();
     }
 
-    private void collectText(@Nullable AccessibilityNodeInfo node, StringBuilder out) {
+    private void collectText(AccessibilityNodeInfo node, StringBuilder out) {
         if (node == null) return;
         CharSequence t = node.getText();
         if (t != null && t.length() > 0) {
