@@ -8,6 +8,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Build;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.provider.Settings;
 import android.text.InputType;
 import android.view.Gravity;
@@ -19,7 +22,16 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends Activity {
-    @Override public void onCreate(Bundle b) { super.onCreate(b); try { seedIfEmpty(); buildUi(); } catch (Throwable t) { showStartupError(t); } }
+    @Override public void onCreate(Bundle b) {
+        super.onCreate(b);
+        try {
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+            seedIfEmpty();
+            buildUi();
+        } catch (Throwable t) { showStartupError(t); }
+    }
     private void showStartupError(Throwable t) { new AlertDialog.Builder(this).setTitle("N8N Advanced Mobile").setMessage("Startup error: " + t.getClass().getSimpleName()).setPositiveButton("OK", null).show(); }
     private LinearLayout list;
     private TextView status;
@@ -146,6 +158,7 @@ public class MainActivity extends Activity {
         run.setOnClickListener(v -> {
             AutomationStore.setActive(this, t.optString("id"));
             AutomationStore.log(this, "Manual trigger: " + name);
+            AutomationAccessibilityService.kick();
             Toast.makeText(this, "Queued. Accessibility service will execute it.", Toast.LENGTH_SHORT).show();
         });
         edit.setOnClickListener(v -> showEditor(t));
@@ -234,6 +247,7 @@ public class MainActivity extends Activity {
         e.setTextColor(0xFF20242A); e.setHintTextColor(0xFF6F747D);
         e.setSingleLine(true); e.setInputType(InputType.TYPE_CLASS_TEXT);
         e.setPadding(dp(10),dp(8),dp(10),dp(8));
+        e.setBackgroundColor(0xFFFFFFFF);
         return e;
     }
 
