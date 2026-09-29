@@ -7,6 +7,7 @@
         android:allowBackup="true"
         android:label="N8N Advanced Mobile"
         android:theme="@style/Theme.Naten"
+        android:enableOnBackInvokedCallback="true"
         android:supportsRtl="true">
 
         <activity
