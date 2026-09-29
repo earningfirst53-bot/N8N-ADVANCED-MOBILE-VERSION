@@ -37,12 +37,28 @@ jobs:
             gradle --no-daemon assembleDebug
           done
 
-      - name: Verify APK
+      - name: Verify APK structure and signature
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           unzip -t app/build/outputs/apk/debug/app-debug.apk >/dev/null
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
           echo "APK size:"
           stat -c%s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Install and launch APK on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.naten.advancedmobile.v3/.MainActivity
+            sleep 4
+            adb shell pidof com.naten.advancedmobile.v3
+            adb shell dumpsys package com.naten.advancedmobile.v3 | grep -E "versionCode=3|versionName=0.3.0"
 
       - name: Upload final APK
         uses: actions/upload-artifact@v4
