@@ -78,3 +78,5 @@ jobs:
           name: N8N-Advanced-Mobile-source
           path: N8N-Advanced-Mobile-source.zip
           if-no-files-found: error
+
+# validation trigger
