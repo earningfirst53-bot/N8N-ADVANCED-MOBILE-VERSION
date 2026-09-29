@@ -67,7 +67,7 @@ jobs:
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK")"
           echo "$BADGING"
           echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v8' versionCode='8' versionName='0.8.0'"
-          echo "$BADGING" | grep -F "targetSdkVersion:'28'"
+          echo "$BADGING" | grep -F "targetSdkVersion:'35'"
           if echo "$BADGING" | grep -q "testOnly"; then exit 1; fi
           if echo "$BADGING" | grep -q "application-debuggable"; then exit 1; fi
 
