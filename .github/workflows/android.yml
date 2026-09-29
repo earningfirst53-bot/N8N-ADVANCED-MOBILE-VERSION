@@ -47,6 +47,13 @@ jobs:
           echo "APK size:"
           stat -c%s app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Upload final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: N8N-Advanced-Mobile-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
       - name: Install and launch APK on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -61,13 +68,6 @@ jobs:
             sleep 4
             adb shell pidof com.naten.advancedmobile.v3
             adb shell dumpsys package com.naten.advancedmobile.v3 | grep -E "versionCode=3|versionName=0.3.0"
-
-      - name: Upload final APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: N8N-Advanced-Mobile-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
 
       - name: Package source
         run: git archive --format=zip --output=N8N-Advanced-Mobile-source.zip HEAD
