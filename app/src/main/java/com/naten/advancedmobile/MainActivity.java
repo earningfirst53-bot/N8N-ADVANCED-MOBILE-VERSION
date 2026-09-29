@@ -1,6 +1,7 @@
 package com.naten.advancedmobile;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -18,15 +19,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends Activity {
+    @Override public void onCreate(Bundle b) { super.onCreate(b); try { seedIfEmpty(); buildUi(); } catch (Throwable t) { showStartupError(t); } }
+    private void showStartupError(Throwable t) { new AlertDialog.Builder(this).setTitle("N8N Advanced Mobile").setMessage("Startup error: " + t.getClass().getSimpleName()).setPositiveButton("OK", null).show(); }
     private LinearLayout list;
     private TextView status;
     private final ArrayList<JSONObject> tasks = new ArrayList<>();
-
-    @Override protected void onCreate(Bundle b) {
-        super.onCreate(b);
-        seedIfEmpty();
-        buildUi();
-    }
 
     @Override protected void onResume() {
         super.onResume();
