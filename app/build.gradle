@@ -7,7 +7,7 @@ android {
     defaultConfig {
         applicationId 'com.naten.advancedmobile.v8'
         minSdk 23
-        targetSdk 28
+        targetSdk 35
         versionCode 8
         versionName '0.8.0'
     }
