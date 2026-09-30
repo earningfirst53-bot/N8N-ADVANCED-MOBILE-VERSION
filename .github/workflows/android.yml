@@ -50,13 +50,5 @@ jobs:
           profile: pixel_7_pro
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
-          script: |
-            set -e
-            adb wait-for-device
-            for i in $(seq 1 10); do
-              adb uninstall com.naten.advancedmobile.v14 >/dev/null 2>&1 || true
-              adb install --no-incremental apk/N8N-Advanced-Mobile-v1.4.0.apk
-              adb shell pm path com.naten.advancedmobile.v14
-              adb shell monkey -p com.naten.advancedmobile.v14 1 >/dev/null
-              adb shell am force-stop com.naten.advancedmobile.v14
-            done
+          script: >-
+            adb wait-for-device; adb install --no-incremental apk/N8N-Advanced-Mobile-v1.4.0.apk; adb shell pm path com.naten.advancedmobile.v14; adb shell monkey -p com.naten.advancedmobile.v14 1 >/dev/null; adb shell am force-stop com.naten.advancedmobile.v14
