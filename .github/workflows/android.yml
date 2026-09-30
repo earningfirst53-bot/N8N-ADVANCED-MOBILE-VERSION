@@ -53,7 +53,7 @@ jobs:
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
           UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
           ALIGNED="app-release-aligned.apk"
-          FINAL="N8N-Advanced-Mobile-v1.2.0.apk"
+          FINAL="N8N-Advanced-Mobile-v1.3.0.apk"
           "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
           "$APKSIGNER" sign \
             --ks ci-release.keystore \
@@ -69,13 +69,13 @@ jobs:
       - name: Verify install-safe package metadata
         run: |
           set -euo pipefail
-          APK="N8N-Advanced-Mobile-v1.2.0.apk"
+          APK="N8N-Advanced-Mobile-v1.3.0.apk"
           unzip -t "$APK" >/dev/null
           test -s "$APK"
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK")"
           echo "$BADGING"
-          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v12' versionCode='12' versionName='1.2.0'"
-          echo "$BADGING" | grep -F "targetSdkVersion:'33'"
+          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v13' versionCode='13' versionName='1.3.0'"
+          echo "$BADGING" | grep -F "targetSdkVersion:'35'"
           echo "$BADGING" | grep -F "provides-component:'accessibility'"
           if echo "$BADGING" | grep -q "testOnly"; then exit 1; fi
           if echo "$BADGING" | grep -q "application-debuggable"; then exit 1; fi
@@ -89,7 +89,7 @@ jobs:
       - name: Verify v1 v2 v3 signatures
         run: |
           set -euo pipefail
-          APK="N8N-Advanced-Mobile-v1.2.0.apk"
+          APK="N8N-Advanced-Mobile-v1.3.0.apk"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee signature.txt
           grep -F "Verified using v1 scheme (JAR signing): true" signature.txt
           grep -F "Verified using v2 scheme (APK Signature Scheme v2): true" signature.txt
@@ -99,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="N8N-Advanced-Mobile-v1.2.0.apk"
+          APK="N8N-Advanced-Mobile-v1.3.0.apk"
           for i in $(seq 1 30); do
             echo "=== APK VALIDATION PASS $i ==="
             unzip -t "$APK" >/dev/null
@@ -109,8 +109,8 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v1.2.0
-          path: N8N-Advanced-Mobile-v1.2.0.apk
+          name: N8N-Advanced-Mobile-v1.3.0
+          path: N8N-Advanced-Mobile-v1.3.0.apk
           if-no-files-found: error
 
   emulator-install:
@@ -126,7 +126,7 @@ jobs:
       - name: Download signed APK
         uses: actions/download-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v1.2.0
+          name: N8N-Advanced-Mobile-v1.3.0
           path: apk
 
       - name: Enable KVM
@@ -144,4 +144,4 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: >-
-            bash -lc 'set -euo pipefail; APK="apk/N8N-Advanced-Mobile-v1.2.0.apk"; PKG="com.naten.advancedmobile.v12"; adb wait-for-device; echo "Android API: $(adb shell getprop ro.build.version.sdk)"; for i in $(seq 1 20); do echo "=== INSTALL TEST PASS $i ==="; adb uninstall "$PKG" >/dev/null 2>&1 || true; adb install --no-incremental "$APK"; adb shell pm path "$PKG"; adb shell monkey -p "$PKG" 1 >/dev/null; adb shell am force-stop "$PKG"; done; echo "30 install/launch/uninstall passes completed successfully on API $(adb shell getprop ro.build.version.sdk)."'
+            bash -lc 'set -euo pipefail; APK="apk/N8N-Advanced-Mobile-v1.3.0.apk"; PKG="com.naten.advancedmobile.v13"; adb wait-for-device; echo "Android API: $(adb shell getprop ro.build.version.sdk)"; for i in $(seq 1 20); do echo "=== INSTALL TEST PASS $i ==="; adb uninstall "$PKG" >/dev/null 2>&1 || true; adb install --no-incremental "$APK"; adb shell pm path "$PKG"; adb shell monkey -p "$PKG" 1 >/dev/null; adb shell am force-stop "$PKG"; done; echo "30 install/launch/uninstall passes completed successfully on API $(adb shell getprop ro.build.version.sdk)."'
