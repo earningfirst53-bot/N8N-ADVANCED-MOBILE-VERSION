@@ -5,11 +5,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.naten.advancedmobile.v12'
+        applicationId 'com.naten.advancedmobile.v13'
         minSdk 23
-        targetSdk 33
-        versionCode 12
-        versionName '1.2.0'
+        targetSdk 35
+        versionCode 13
+        versionName '1.3.0'
     }
 
     buildTypes {
