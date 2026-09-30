@@ -34,41 +34,66 @@ jobs:
         env:
           KEYSTORE_PASSWORD: n8n-mobile-ci-only
         run: |
-          keytool -genkeypair -v             -keystore ci-release.keystore             -storepass "$KEYSTORE_PASSWORD"             -keypass "$KEYSTORE_PASSWORD"             -alias n8nmobile             -keyalg RSA             -keysize 2048             -validity 10000             -dname "CN=N8N Advanced Mobile, O=N8N Prototype, C=IN"
+          keytool -genkeypair -v \
+            -keystore ci-release.keystore \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEYSTORE_PASSWORD" \
+            -alias n8nmobile \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=N8N Advanced Mobile, O=N8N Prototype, C=IN"
 
-      - name: Align and sign release APK
+      - name: Align and sign release APK with v1 + v2 + v3
         env:
           KEYSTORE_PASSWORD: n8n-mobile-ci-only
         run: |
-          set -e
+          set -euo pipefail
           ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
           UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
           ALIGNED="app-release-aligned.apk"
-          FINAL="N8N-Advanced-Mobile-v1.0.0.apk"
+          FINAL="N8N-Advanced-Mobile-v1.1.0.apk"
           "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
-          "$APKSIGNER" sign --ks ci-release.keystore --ks-key-alias n8nmobile --ks-pass env:KEYSTORE_PASSWORD --out "$FINAL" "$ALIGNED"
-          "$APKSIGNER" verify --verbose "$FINAL"
+          "$APKSIGNER" sign \
+            --ks ci-release.keystore \
+            --ks-key-alias n8nmobile \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --min-sdk-version 23 \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$FINAL" "$ALIGNED"
+          "$APKSIGNER" verify --verbose --min-sdk-version 23 "$FINAL"
 
       - name: Verify install-safe package metadata
         run: |
-          set -e
-          APK="N8N-Advanced-Mobile-v1.0.0.apk"
+          set -euo pipefail
+          APK="N8N-Advanced-Mobile-v1.1.0.apk"
           unzip -t "$APK" >/dev/null
           test -s "$APK"
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK")"
           echo "$BADGING"
-          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v10' versionCode='10' versionName='1.0.0'"
-          echo "$BADGING" | grep -F "targetSdkVersion:'35'"
+          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v11' versionCode='11' versionName='1.1.0'"
+          echo "$BADGING" | grep -F "targetSdkVersion:'28'"
           echo "$BADGING" | grep -F "provides-component:'accessibility'"
           if echo "$BADGING" | grep -q "testOnly"; then exit 1; fi
           if echo "$BADGING" | grep -q "application-debuggable"; then exit 1; fi
 
+      - name: Verify v1 v2 v3 signatures
+        run: |
+          set -euo pipefail
+          APK="N8N-Advanced-Mobile-v1.1.0.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee signature.txt
+          grep -F "Verified using v1 scheme (JAR signing): true" signature.txt
+          grep -F "Verified using v2 scheme (APK Signature Scheme v2): true" signature.txt
+          grep -F "Verified using v3 scheme (APK Signature Scheme v3): true" signature.txt
+
       - name: Repeat APK validation 20 times
         shell: bash
         run: |
-          set -e
-          APK="N8N-Advanced-Mobile-v1.0.0.apk"
+          set -euo pipefail
+          APK="N8N-Advanced-Mobile-v1.1.0.apk"
           for i in $(seq 1 20); do
             echo "=== APK VALIDATION PASS $i ==="
             unzip -t "$APK" >/dev/null
@@ -78,24 +103,24 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v1.0.0
-          path: N8N-Advanced-Mobile-v1.0.0.apk
+          name: N8N-Advanced-Mobile-v1.1.0
+          path: N8N-Advanced-Mobile-v1.1.0.apk
           if-no-files-found: error
 
   emulator-install:
     name: Install-test on Android emulator
     needs: build-release
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        api-level: [29, 33]
+        api-level: [29, 33, 34, 35]
     steps:
       - name: Download signed APK
         uses: actions/download-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v1.0.0
+          name: N8N-Advanced-Mobile-v1.1.0
           path: apk
 
       - name: Enable KVM
@@ -113,4 +138,4 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: >-
-            bash -lc 'set -euo pipefail; APK="apk/N8N-Advanced-Mobile-v1.0.0.apk"; PKG="com.naten.advancedmobile.v10"; adb wait-for-device; echo "Android API: $(adb shell getprop ro.build.version.sdk)"; for i in $(seq 1 20); do echo "=== INSTALL TEST PASS $i ==="; adb uninstall "$PKG" >/dev/null 2>&1 || true; adb install "$APK"; adb shell pm path "$PKG"; adb shell monkey -p "$PKG" 1 >/dev/null; adb shell am force-stop "$PKG"; done; echo "20 install/launch/uninstall passes completed successfully on API $(adb shell getprop ro.build.version.sdk)."'
+            bash -lc 'set -euo pipefail; APK="apk/N8N-Advanced-Mobile-v1.1.0.apk"; PKG="com.naten.advancedmobile.v11"; adb wait-for-device; echo "Android API: $(adb shell getprop ro.build.version.sdk)"; for i in $(seq 1 20); do echo "=== INSTALL TEST PASS $i ==="; adb uninstall "$PKG" >/dev/null 2>&1 || true; adb install --no-incremental "$APK"; adb shell pm path "$PKG"; adb shell monkey -p "$PKG" 1 >/dev/null; adb shell am force-stop "$PKG"; done; echo "20 install/launch/uninstall passes completed successfully on API $(adb shell getprop ro.build.version.sdk)."'
