@@ -4,3 +4,6 @@ Basic deterministic Android automation foundation. Accessibility actions are use
 
 
 <!-- CI validation marker: v1.1.0 final install verification -->
+
+
+<!-- v1.2.0 final CI validation -->
