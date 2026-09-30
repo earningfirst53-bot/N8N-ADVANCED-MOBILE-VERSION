@@ -2,5 +2,6 @@
 <resources>
     <string name="app_name">N8N Advanced Mobile</string>
     <string name="accessibility_description">Allows N8N Advanced Mobile to read visible Android UI elements and perform user-configured automation actions.</string>
+    <string name="accessibility_summary">User-configured Android UI automation service.</string>
     <string name="accessibility_service_label">N8N Automation Service</string>
 </resources>
