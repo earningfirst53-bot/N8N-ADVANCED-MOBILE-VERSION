@@ -74,7 +74,7 @@ jobs:
           test -s "$APK"
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK")"
           echo "$BADGING"
-          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v12' versionCode='11' versionName='1.1.0'"
+          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v12' versionCode='12' versionName='1.2.0'"
           echo "$BADGING" | grep -F "targetSdkVersion:'33'"
           echo "$BADGING" | grep -F "provides-component:'accessibility'"
           if echo "$BADGING" | grep -q "testOnly"; then exit 1; fi
