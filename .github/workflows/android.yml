@@ -45,7 +45,7 @@ jobs:
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
           UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
           ALIGNED="app-release-aligned.apk"
-          FINAL="N8N-Advanced-Mobile-v0.9.0.apk"
+          FINAL="N8N-Advanced-Mobile-v1.0.0.apk"
           "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
           "$APKSIGNER" sign --ks ci-release.keystore --ks-key-alias n8nmobile --ks-pass env:KEYSTORE_PASSWORD --out "$FINAL" "$ALIGNED"
           "$APKSIGNER" verify --verbose "$FINAL"
@@ -53,12 +53,12 @@ jobs:
       - name: Verify install-safe package metadata
         run: |
           set -e
-          APK="N8N-Advanced-Mobile-v0.9.0.apk"
+          APK="N8N-Advanced-Mobile-v1.0.0.apk"
           unzip -t "$APK" >/dev/null
           test -s "$APK"
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK")"
           echo "$BADGING"
-          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v9' versionCode='9' versionName='0.9.0'"
+          echo "$BADGING" | grep -F "package: name='com.naten.advancedmobile.v10' versionCode='10' versionName='1.0.0'"
           echo "$BADGING" | grep -F "targetSdkVersion:'35'"
           echo "$BADGING" | grep -F "provides-component:'accessibility'"
           if echo "$BADGING" | grep -q "testOnly"; then exit 1; fi
@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          APK="N8N-Advanced-Mobile-v0.9.0.apk"
+          APK="N8N-Advanced-Mobile-v1.0.0.apk"
           for i in $(seq 1 20); do
             echo "=== APK VALIDATION PASS $i ==="
             unzip -t "$APK" >/dev/null
@@ -78,8 +78,8 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v0.9.0
-          path: N8N-Advanced-Mobile-v0.9.0.apk
+          name: N8N-Advanced-Mobile-v1.0.0
+          path: N8N-Advanced-Mobile-v1.0.0.apk
           if-no-files-found: error
 
   emulator-install:
@@ -95,7 +95,7 @@ jobs:
       - name: Download signed APK
         uses: actions/download-artifact@v4
         with:
-          name: N8N-Advanced-Mobile-v0.9.0
+          name: N8N-Advanced-Mobile-v1.0.0
           path: apk
 
       - name: Enable KVM
@@ -113,4 +113,4 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: >-
-            bash -lc 'set -euo pipefail; APK="apk/N8N-Advanced-Mobile-v0.9.0.apk"; PKG="com.naten.advancedmobile.v9"; adb wait-for-device; echo "Android API: $(adb shell getprop ro.build.version.sdk)"; for i in $(seq 1 10); do echo "=== INSTALL TEST PASS $i ==="; adb uninstall "$PKG" >/dev/null 2>&1 || true; adb install "$APK"; adb shell pm path "$PKG"; adb shell monkey -p "$PKG" 1 >/dev/null; adb shell am force-stop "$PKG"; done; echo "10 install/launch/uninstall passes completed successfully on API $(adb shell getprop ro.build.version.sdk)."'
+            bash -lc 'set -euo pipefail; APK="apk/N8N-Advanced-Mobile-v1.0.0.apk"; PKG="com.naten.advancedmobile.v10"; adb wait-for-device; echo "Android API: $(adb shell getprop ro.build.version.sdk)"; for i in $(seq 1 20); do echo "=== INSTALL TEST PASS $i ==="; adb uninstall "$PKG" >/dev/null 2>&1 || true; adb install "$APK"; adb shell pm path "$PKG"; adb shell monkey -p "$PKG" 1 >/dev/null; adb shell am force-stop "$PKG"; done; echo "20 install/launch/uninstall passes completed successfully on API $(adb shell getprop ro.build.version.sdk)."'
