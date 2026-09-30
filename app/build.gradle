@@ -5,11 +5,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.naten.advancedmobile.v9'
+        applicationId 'com.naten.advancedmobile.v10'
         minSdk 23
         targetSdk 35
-        versionCode 9
-        versionName '0.9.0'
+        versionCode 10
+        versionName '1.0.0'
     }
 
     buildTypes {
