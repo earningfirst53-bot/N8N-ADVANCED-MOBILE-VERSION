@@ -30,3 +30,33 @@ jobs:
         with:
           name: N8N-Advanced-Mobile-v1.4.0
           path: N8N-Advanced-Mobile-v1.4.0.apk
+
+  emulator:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 33, 34, 35]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: N8N-Advanced-Mobile-v1.4.0
+          path: apk
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          profile: pixel_7_pro
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          disable-animations: true
+          script: |
+            set -e
+            adb wait-for-device
+            for i in $(seq 1 10); do
+              adb uninstall com.naten.advancedmobile.v14 >/dev/null 2>&1 || true
+              adb install --no-incremental apk/N8N-Advanced-Mobile-v1.4.0.apk
+              adb shell pm path com.naten.advancedmobile.v14
+              adb shell monkey -p com.naten.advancedmobile.v14 1 >/dev/null
+              adb shell am force-stop com.naten.advancedmobile.v14
+            done
